@@ -1,0 +1,58 @@
+{
+  "name": "koa-framework",
+  "version": "6.0.2",
+  "description": "Dead simple framework on top of koa",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --bail --harmony --reporter spec test.js",
+    "test-watch": "nodemon --exec \"npm test\"",
+    "validate": "rm -rf ./node_modules && npm cache clear && npm install",
+    "lint": "jshint ."
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jksdua/koa-framework"
+  },
+  "engines": {
+    "node": ">=0.11.9"
+  },
+  "keywords": [
+    "koa",
+    "framework",
+    "http"
+  ],
+  "author": "Jaap Karan Singh <jksdua@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "jsonschema": "~1.0.0",
+    "jsonschema-extra": "^1.0.2",
+    "koa": "^0.21.0",
+    "koa-body-parser": "~1.1.0",
+    "koa-cors": "0.0.16",
+    "koa-gzip": "^0.1.0",
+    "koa-helmet": "^0.2.0",
+    "koa-json-logger": "0.0.22",
+    "koa-no-cache": "^1.1.0",
+    "koa-router": "^5.0.1",
+    "koa-x-request-id": "^1.1.0",
+    "lodash": "^3.10.1",
+    "vitalsigns": "^0.4.3",
+    "vitalsigns-koa": "^1.1.0"
+  },
+  "devDependencies": {
+    "chai": "*",
+    "chai-datetime": "^1.4.0",
+    "jshint": "*",
+    "mocha": "^2.2.5",
+    "precommit-hook": "*",
+    "request": "*"
+  },
+  "pre-commit": [
+    "lint",
+    "validate",
+    "test"
+  ]
+}
