@@ -17,7 +17,7 @@
     "url": "https://github.com/dantman/koa-request-schema"
   },
   "engines": {
-    "node": ">=0.11.9"
+    "node": ">=0.12"
   },
   "keywords": [
     "koa",
