@@ -1,94 +1,157 @@
-/* jshint node:true, esnext:true */
-
 'use strict';
 
-const KF_VERSION = require('./package.json').version;
-
-var koa = require('koa');
 var merge = require('lodash').merge;
 var assert = require('assert');
-var router = require('koa-router');
 
-var middleware = {
-	requestId: require('./middleware/request-id'),
-	parse: require('./middleware/parse'),
-	error: require('./middleware/error'),
-	logger: require('./middleware/logger'),
-	cors: require('./middleware/cors'),
-	noCache: require('./middleware/no-cache'),
-	gzip: require('./middleware/gzip'),
-	helmet: require('./middleware/helmet'),
-	vitalsigns: require('./middleware/vitalsigns'),
-	schema: require('./middleware/schema')
+const DEFAULT_ERROR_ENVS = ['development', 'dev', 'test', 'testing'];
+const INVALID_PARAMS_ERROR_MSG = 'Invalid request parameters';
+
+var convertTo = {
+  date: function(d) {
+    return new Date(d);
+  },
+  integer: function(n) {
+    return parseInt(n, 10);
+  },
+  number: function(n) {
+    return parseFloat(n, 10);
+  },
+  boolean: function(b) {
+    return 'true' === b;
+  },
+  object: function(o) {
+    return JSON.parse(o);
+  }
 };
 
-module.exports = exports = function(options) {
-	var app = koa();
+function convertOne(item, schema, types) {
+  if (schema.type && convertTo[schema.type] && 'string' === typeof item) {
+    if ('*' === types || types.indexOf(schema.type) > -1) {
+      return convertTo[schema.type](item);
+    }
+  } else if (schema.properties) {
+    for (var i in schema.properties) {
+      if (item && item[i]) {
+        item[i] = convertOne(item[i], schema.properties[i], types);
+      }
+    }
+  }
 
-	app.KF_VERSION = KF_VERSION;
+  return item;
+}
 
-	// print warning messages to console by default
-		// using `app.warn` allows users to turn this behaviour off by overriding this property
-	app.warn = exports.warn;
+function convertStringToType(ctx, schema) {
+  ctx.params = convertOne(ctx.params, schema.properties.params || {}, '*');
+  ctx.request.body = convertOne(ctx.request.body, schema.properties.body || {}, ['date']);
 
-	options = merge({}, {
-		middleware: Object.keys(middleware).reduce(function(opt, name) {
-			opt[name] = middleware[name].defaults;
-			assert(opt[name]);
-			return opt;
-		}, {}),
-		// options passed to koa-router when creating a router
-		router: {
-			throw: true
-		}
-	}, options);
-	var mOptions = options.middleware;
+  // there is a setter on ctx.query which doesnt let us directly set the query object
+  let parsedQuery = convertOne(ctx.query, schema.properties.query || {}, '*');
+  merge(ctx.query, parsedQuery);
+}
 
-	['requestId', 'gzip', 'logger', 'error', 'noCache', 'cors', 'parse'].forEach(function(i) {
-		if (mOptions[i].enabled) {
-			app.use(middleware[i](mOptions[i], app));
-		}
-	});
+module.exports = exports = function(schema, opt) {
+  opt = merge({}, exports.default, { strict: true }, opt);
 
-	app.router = function(routerOpts) {
-		routerOpts = merge({}, options.router, routerOpts);
-		return new router(routerOpts);
-	};
-	app.Router = app.router;
+  var validator = opt.validator;
+  if (!validator) {
+    validator = new (require('jsonschema').Validator)();
+    require('jsonschema-extra')(validator);
+  }
 
-	app.mount = function() {
-		for (var i = 0, len = arguments.length; i < len; i += 1) {
-			var router = arguments[i];
-			app.use(router.routes());
-			app.use(router.allowedMethods());
-		}
-	};
+  var coerceTypes = opt.coerceTypes;
+  var strict = opt.strict;
 
-	// helmet (security)
-	if (mOptions.helmet.enabled) {
-		middleware.helmet(mOptions.helmet, app);
-	} else {
-		app.warn('helmet middleware disabled. It will be enabled by default in next major release');
-	}
+  var fnSchema = ('function' === typeof schema);
+  var objSchema = ('object' === typeof schema);
+  var parsedSchema;
 
-	// health route
-	if (mOptions.vitalsigns.enabled) {
-		middleware.vitalsigns(mOptions.vitalsigns, app);
-	} else {
-		app.warn('vitalsigns middleware disabled. It will be enabled by default in next major release');
-	}
+  // add base schemas used for tightening what gets through the request
+  validator.addSchema({}, '@koa-framework/not-strict');
+  validator.addSchema({ additionalProperties: false }, '@koa-framework/strict');
 
-	// schema validator
-	app.schema = middleware.schema(mOptions.schema, app);
+  var baseSchema = {
+    type: 'object',
+    required: true,
+    additionalProperties: false
+  };
 
-	app.bundledMiddleware = middleware;
+  // apply opt.strict
+  if (!strict) {
+    baseSchema.additionalProperties = true;
+  }
 
-	return app;
+  function parseSchema(schema) {
+    return {
+      type: 'object',
+      required: true,
+      properties: {
+        body: merge({}, baseSchema, schema.body),
+        query: merge({}, baseSchema, schema.query),
+        // is an array with object properties
+        params: merge({}, baseSchema, schema.params)
+      },
+      additionalProperties: false
+    };
+  }
+
+  assert(objSchema || fnSchema, 'Missing/invalid schema');
+  if (objSchema) {
+    assert(schema && (schema.body || schema.query || schema.params), 'Missing/invalid schema');
+  }
+  function getSchema(ctx) {
+    if (objSchema) {
+      parsedSchema = parsedSchema || parseSchema(schema);
+      return parsedSchema;
+    } else if (fnSchema) {
+      return parseSchema(schema.call(ctx, ctx));
+    }
+  }
+
+  return function *(next) {
+    var displayErrors = opt.displayErrors;
+    if (displayErrors === undefined) {
+      // only return data validation errors in dev environment
+      displayErrors = DEFAULT_ERROR_ENVS.indexOf(this.app.env) > -1 ? true : false;
+    }
+
+    var requestSchema = getSchema(this);
+
+    // let fnSchema optionally not return a schema so wrap in if block
+    if (requestSchema) {
+      if (coerceTypes) {
+        convertStringToType(this, requestSchema);
+      }
+
+      var res = validator.validate({
+        body: this.request.body || {},
+        query: this.query || {},
+        params: this.params || {}
+      }, requestSchema, {
+        propertyName: 'request',
+        allowUnknownAttributes: !strict,
+        base: strict ? '@koa-framework/strict' : '@koa-framework/not-strict'
+      });
+
+      if (!res.valid) {
+        var error = new Error(INVALID_PARAMS_ERROR_MSG);
+        error.status = 400;
+        error.details = { validationErrors: displayErrors ? res.errors : null };
+        this.throw(error);
+      } else {
+        yield next;
+      }
+    }
+  };
 };
 
-exports.KF_VERSION = KF_VERSION;
-// global warn method
-	// allows global override for all app instances
-exports.warn = console.warn;
-// expose middleware so it can be used in more flexible ways
-exports.middleware = exports.bundledMiddleware = middleware;
+exports.create = function(globalOpt) {
+  return function(schema, opt) {
+    return module.exports(schema, merge(globalOpt, opt));
+  };
+};
+
+exports.defaults = {
+  validator: null,
+  coerceTypes: true,
+  warn: console.warn.bind(console)
+};
