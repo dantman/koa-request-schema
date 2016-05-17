@@ -84,5 +84,12 @@ Options may be passed as the second argument to `koa-request-schema`; additional
 * `validator`: Override the jsonschema Validator instance used.
 * `strict` [default=`true`]: Do not permit unknown properties in params, query, or body unless the schema defines its own `additionalProperties` value. (Default cannot be changed)
 
+Koa 2 Support
+-------------
+To use `koa-request-schema` with `koa@2`, please use:
+```sh
+npm install --save koa-request-schema@next
+```
+
 [Changelog](./history.md)
 -------------------------
