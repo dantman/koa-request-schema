@@ -359,6 +359,36 @@ describe('koa-request-schema', function() {
 		});
 	});
 
+	it('should default coerceTypes to true', function(done) {
+		var schema = {
+			query: {
+				properties: {
+					a: { type: 'integer', required: true }
+				}
+			}
+		};
+
+		var p = port();
+		var app = makeApp();
+
+		app.router.post('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.query;
+		}); // jshint ignore:line
+
+		app.listen(p);
+
+		request({
+			url: 'http://localhost:' + p + '?a=123',
+			method: 'POST',
+			json: true
+		}, function(err, res) {
+			// should not throw validation error
+			expect(res.statusCode).to.equal(200);
+			expect(res.body.a).to.equal(123);
+			done();
+		});
+	});
+
 	it('should work for a number type', function(done) {
 		var schema = {
 			query: {
