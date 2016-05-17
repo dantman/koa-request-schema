@@ -50,7 +50,7 @@ function convertStringToType(ctx, schema) {
 }
 
 module.exports = exports = function(schema, opt) {
-  opt = merge({}, exports.default, { strict: true }, opt);
+  opt = merge({}, exports.defaults, { strict: true }, opt);
 
   var validator = opt.validator;
   if (!validator) {

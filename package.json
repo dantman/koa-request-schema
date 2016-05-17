@@ -1,6 +1,6 @@
 {
   "name": "koa-request-schema",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Data validation using jsonschema for koa",
   "main": "index.js",
   "scripts": {
