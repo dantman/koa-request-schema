@@ -107,39 +107,43 @@ module.exports = exports = function(schema, opt) {
     }
   }
 
-  return function *(next) {
-    var displayErrors = opt.displayErrors;
-    if (displayErrors === undefined) {
-      // only return data validation errors in dev environment
-      displayErrors = DEFAULT_ERROR_ENVS.indexOf(this.app.env) > -1 ? true : false;
-    }
-
-    var requestSchema = getSchema(this);
-
-    // let fnSchema optionally not return a schema so wrap in if block
-    if (requestSchema) {
-      if (coerceTypes) {
-        convertStringToType(this, requestSchema);
+  return function (ctx, next) {
+    try {
+      var displayErrors = opt.displayErrors;
+      if (displayErrors === undefined) {
+        // only return data validation errors in dev environment
+        displayErrors = DEFAULT_ERROR_ENVS.indexOf(ctx.app.env) > -1 ? true : false;
       }
 
-      var res = validator.validate({
-        body: this.request.body || {},
-        query: this.query || {},
-        params: this.params || {}
-      }, requestSchema, {
-        propertyName: 'request',
-        allowUnknownAttributes: !strict,
-        base: strict ? '@koa-framework/strict' : '@koa-framework/not-strict'
-      });
+      var requestSchema = getSchema(ctx);
 
-      if (!res.valid) {
-        var error = new Error(INVALID_PARAMS_ERROR_MSG);
-        error.status = 400;
-        error.details = { validationErrors: displayErrors ? res.errors : null };
-        this.throw(error);
-      } else {
-        yield next;
+      // let fnSchema optionally not return a schema so wrap in if block
+      if (requestSchema) {
+        if (coerceTypes) {
+          convertStringToType(ctx, requestSchema);
+        }
+
+        var res = validator.validate({
+          body: ctx.request.body || {},
+          query: ctx.query || {},
+          params: ctx.params || {}
+        }, requestSchema, {
+          propertyName: 'request',
+          allowUnknownAttributes: !strict,
+          base: strict ? '@koa-framework/strict' : '@koa-framework/not-strict'
+        });
+
+        if (!res.valid) {
+          var error = new Error(INVALID_PARAMS_ERROR_MSG);
+          error.status = 400;
+          error.details = { validationErrors: displayErrors ? res.errors : null };
+          ctx.throw(error);
+        } else {
+          return next();
+        }
       }
+    } catch (e) {
+      return Promise.reject(e);
     }
   };
 };

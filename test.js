@@ -11,21 +11,19 @@ describe('koa-request-schema', function() {
 
 	var request = require('request');
 
-	var koa = require('koa');
+	var Koa = require('koa');
 	var Router = require('koa-router');
-	var bodyparser = require('koa-body-parser');
+	var bodyparser = require('koa-bodyparser');
 	var reqSchema = require(__dirname);
 
 	function makeApp() {
-		var app = koa();
+		var app = new Koa();
 		app.use(bodyparser());
-		app.use(function *(next) {
-			try {
-				yield next;
-			} catch (err) {
-				this.status = err.status || 500;
-				this.body = { error: err.message, details: err.details };
-			}
+		app.use(function (ctx, next) {
+			return next().catch(function(err) {
+				ctx.status = err.status || 500;
+				ctx.body = { error: err.message, details: err.details };
+			});
 		});
 		app.router = new Router();
 		app.use(app.router.routes());
@@ -46,8 +44,8 @@ describe('koa-request-schema', function() {
 		expect(function() {
 			var app = makeApp();
 
-			app.router.post('/', reqSchema(), function *() {
-				this.body = this.request.body;
+			app.router.post('/', reqSchema(), function (ctx) {
+				ctx.body = ctx.request.body;
 			}); // jshint ignore:line
 		}).to.throw(/schema/i);
 	});
@@ -64,8 +62,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.get('/a/:a', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.get('/a/:a', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -95,8 +93,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/a/:a', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.post('/a/:a', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -128,8 +126,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.get('/', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.get('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -160,8 +158,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.post('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -188,8 +186,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.get('/', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.get('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -219,8 +217,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.get('/', reqSchema(schema), function *() {
-			this.body = this.request.body;
+		app.router.get('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -251,8 +249,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.get('/', reqSchema(schema, { displayErrors: false }), function *() {
-			this.body = this.request.body;
+		app.router.get('/', reqSchema(schema, { displayErrors: false }), function (ctx) {
+			ctx.body = ctx.request.body;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -283,8 +281,8 @@ describe('koa-request-schema', function() {
 			var app = makeApp();
 			var reqSchema2 = reqSchema.create({ displayErrors: false });
 
-			app.router.get('/', reqSchema2(schema), function *() {
-				this.body = this.request.body;
+			app.router.get('/', reqSchema2(schema), function (ctx) {
+				ctx.body = ctx.request.body;
 			}); // jshint ignore:line
 
 			app.listen(p);
@@ -315,8 +313,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -343,8 +341,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -373,8 +371,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -415,17 +413,17 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/a/:a/b/:b', reqSchema(schema, { coerceTypes: true }), function *() {
+		app.router.post('/a/:a/b/:b', reqSchema(schema, { coerceTypes: true }), function (ctx) {
 			function assert(item) {
 				expect(item.a).to.equalDate(a);
 				expect(item.b).to.equalDate(b);
 				expect(item).to.not.have.property('c');
 			}
 
-			assert(this.params);
-			assert(this.request.body);
+			assert(ctx.params);
+			assert(ctx.request.body);
 
-			this.status = 204;
+			ctx.status = 204;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -454,8 +452,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/a/:a/b/:b', reqSchema(schema, { coerceTypes: true }), function *() {
-			this.body = this.params;
+		app.router.post('/a/:a/b/:b', reqSchema(schema, { coerceTypes: true }), function (ctx) {
+			ctx.body = ctx.params;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -485,8 +483,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema, { coerceTypes: true }), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -516,8 +514,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema, {coerceTypes: true}), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema, {coerceTypes: true}), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -545,8 +543,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema, { coerceTypes: false }), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema, { coerceTypes: false }), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -575,8 +573,8 @@ describe('koa-request-schema', function() {
 		var app = makeApp();
 		var reqSchema2 = reqSchema.create({ coerceTypes: true });
 
-		app.router.post('/', reqSchema2(schema), reqSchema2(schema), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema2(schema), reqSchema2(schema), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -611,8 +609,8 @@ describe('koa-request-schema', function() {
 
 		app.router.post('/a/:a', reqSchema(function() {
 			return schema;
-		}, { coerceTypes: true }), function *() {
-			this.body = this.query;
+		}, { coerceTypes: true }), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);
@@ -641,8 +639,8 @@ describe('koa-request-schema', function() {
 		var p = port();
 		var app = makeApp();
 
-		app.router.post('/', reqSchema(schema), function *() {
-			this.body = this.query;
+		app.router.post('/', reqSchema(schema), function (ctx) {
+			ctx.body = ctx.query;
 		}); // jshint ignore:line
 
 		app.listen(p);

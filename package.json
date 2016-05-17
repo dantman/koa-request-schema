@@ -1,6 +1,6 @@
 {
   "name": "koa-request-schema",
-  "version": "1.0.0",
+  "version": "2.0.0-alpha.1",
   "description": "Data validation using jsonschema for koa",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,7 @@
     "url": "https://github.com/dantman/koa-request-schema"
   },
   "engines": {
-    "node": ">=0.12"
+    "node": ">=4"
   },
   "keywords": [
     "koa",
@@ -31,20 +31,21 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "koa": "^0.21.0"
+    "koa": "^2.0.0"
   },
   "dependencies": {
-    "jsonschema": "~1.0.0",
+    "jsonschema": "^1.1.0",
     "jsonschema-extra": "^1.0.2",
-    "lodash": "^3.10.1"
+    "koa": "^2.0.0",
+    "lodash": "^4.12.0"
   },
   "devDependencies": {
     "chai": "*",
-    "koa": "^0.21.0",
-    "koa-body-parser": "~1.1.0",
-    "koa-router": "^5.0.1",
     "chai-datetime": "^1.4.0",
     "jshint": "*",
+    "koa": "^1.2.0",
+    "koa-bodyparser": "^3.1.0",
+    "koa-router": "^7.0.1",
     "mocha": "^2.2.5",
     "precommit-hook": "*",
     "request": "*"
@@ -53,5 +54,8 @@
     "lint",
     "validate",
     "test"
-  ]
+  ],
+  "publishConfig": {
+    "tag": "next"
+  }
 }

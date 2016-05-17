@@ -1,12 +1,11 @@
 koa-request-schema
-=============
+==================
 
 [![NPM version][npm-image]][npm-url]
 [![build status][travis-image]][travis-url]
 [![David deps][david-image]][david-url]
 
 [![node version][node-image]][node-url]
-[![io version][io-image]][node-url]
 
 [npm-image]: https://img.shields.io/npm/v/koa-request-schema.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/koa-request-schema
@@ -14,14 +13,13 @@ koa-request-schema
 [travis-url]: https://travis-ci.org/dantman/koa-request-schema
 [david-image]: https://img.shields.io/david/dantman/koa-request-schema.svg?style=flat-square
 [david-url]: https://david-dm.org/dantman/koa-request-schema
-[node-image]: https://img.shields.io/badge/node.js-%3E=_0.11.9-green.svg?style=flat-square
+[node-image]: https://img.shields.io/badge/node.js-%3E=_0.4-green.svg?style=flat-square
 [node-url]: http://nodejs.org
-[io-image]: https://img.shields.io/badge/io.js-%3E=_1.0-yellow.svg?style=flat-square
-[io-url]: https://iojs.org
 
 
 `koa-request-schema` implements request data validation using jsonschema. If data does not pass validation, the server returns a `400 Bad Request` error. In non production environments, the response body is populated with the validation errors.
 
+**Notice: `koa-request-schema@2` supports `koa@2`, if you want to use this module with `koa@1`, please use `koa-request-schema@1`.**
 
 Usage
 -----
@@ -47,13 +45,13 @@ router.post('/secret/:object',
 			}
 		}
 	}),
-	function *() {
-		let body = this.request.body;
+	async function (ctx) {
+		let body = ctx.request.body;
 
 		if (body.password === 'the best password ever') {
-			this.body = 'You got it boss';
+			ctx.body = 'You got it boss';
 		} else {
-			this.throw(403, 'Pffttt...');
+			ctx.throw(403, 'Pffttt...');
 		}
 	});
 ```
