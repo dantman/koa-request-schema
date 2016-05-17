@@ -6,7 +6,6 @@
   "scripts": {
     "test": "mocha --bail --harmony --reporter spec test.js",
     "test-watch": "nodemon --exec \"npm test\"",
-    "validate": "rm -rf ./node_modules && npm cache clear && npm install",
     "lint": "jshint ."
   },
   "directories": {
@@ -52,7 +51,6 @@
   },
   "pre-commit": [
     "lint",
-    "validate",
     "test"
   ],
   "publishConfig": {
